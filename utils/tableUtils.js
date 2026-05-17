@@ -79,6 +79,15 @@ function findTeam(table, name) {
 }
 
 /**
+ * Column widths for the formatted table display.
+ */
+const COL_POS = 4;
+const COL_CLUB = 16;
+const COL_STAT = 3;
+const COL_GD = 5;
+const COL_PTS = 4;
+
+/**
  * Format the league table as a Discord embed-friendly code block string.
  * Columns: POS | CLUB | PL | W | D | L | GD | PTS
  * @param {Array} table - Sorted table with positions assigned
@@ -86,18 +95,18 @@ function findTeam(table, name) {
  */
 function formatTable(table) {
   // Header
-  const header = `\`\`\`\n${'POS'.padEnd(4)} ${'CLUB'.padEnd(16)} ${'PL'.padStart(3)} ${'W'.padStart(3)} ${'D'.padStart(3)} ${'L'.padStart(3)} ${'GD'.padStart(5)} ${'PTS'.padStart(4)}\n`;
+  const header = `\`\`\`\n${'POS'.padEnd(COL_POS)} ${'CLUB'.padEnd(COL_CLUB)} ${'PL'.padStart(COL_STAT)} ${'W'.padStart(COL_STAT)} ${'D'.padStart(COL_STAT)} ${'L'.padStart(COL_STAT)} ${'GD'.padStart(COL_GD)} ${'PTS'.padStart(COL_PTS)}\n`;
   const divider = `${'-'.repeat(45)}\n`;
 
   const rows = table.map(t => {
     const pos = t.pos === 1 ? '🏆 ' : `${String(t.pos).padEnd(2)} `;
-    const club = t.club.padEnd(16);
-    const pl = String(t.pl).padStart(3);
-    const w = String(t.w).padStart(3);
-    const d = String(t.d).padStart(3);
-    const l = String(t.l).padStart(3);
-    const gd = (t.gd >= 0 ? `+${t.gd}` : String(t.gd)).padStart(5);
-    const pts = String(t.pts).padStart(4);
+    const club = t.club.padEnd(COL_CLUB);
+    const pl = String(t.pl).padStart(COL_STAT);
+    const w = String(t.w).padStart(COL_STAT);
+    const d = String(t.d).padStart(COL_STAT);
+    const l = String(t.l).padStart(COL_STAT);
+    const gd = (t.gd >= 0 ? `+${t.gd}` : String(t.gd)).padStart(COL_GD);
+    const pts = String(t.pts).padStart(COL_PTS);
     return `${pos}${club}${pl}${w}${d}${l}${gd}${pts}`;
   });
 

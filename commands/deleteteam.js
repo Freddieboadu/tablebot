@@ -40,8 +40,9 @@ module.exports = {
     }
 
     // Build confirmation prompt with Yes/No buttons
-    const confirmId = `delete_confirm_${interaction.user.id}_${Date.now()}`;
-    const cancelId = `delete_cancel_${interaction.user.id}_${Date.now()}`;
+    // Use interaction.id for uniqueness — it is a unique snowflake per interaction
+    const confirmId = `delete_confirm_${interaction.id}`;
+    const cancelId = `delete_cancel_${interaction.id}`;
 
     const confirmButton = new ButtonBuilder()
       .setCustomId(confirmId)

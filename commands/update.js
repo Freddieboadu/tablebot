@@ -7,7 +7,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { readTable, writeTable, findTeam, sortAndRecalculate, formatTable } = require('../utils/tableUtils');
 const { validateScore, teamsEqual } = require('../utils/validator');
-const { pushHistory } = require('../utils/history');
+const { pushHistory, readHistory } = require('../utils/history');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -85,7 +85,6 @@ module.exports = {
     // We store a simple fixture log — for now, warn based on the force flag
     if (!force) {
       // Check if any recent history entry describes the exact same fixture
-      const { readHistory } = require('../utils/history');
       const history = readHistory();
       const dupDesc = `${homeTeam.club} ${homeScore}-${awayScore} ${awayTeam.club}`;
       const isDuplicate = history.some(h => h.description === dupDesc);
