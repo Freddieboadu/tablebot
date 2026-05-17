@@ -1,0 +1,12 @@
+[
+  { "pos": 1, "club": "CHELSEA", "pl": 18, "w": 9, "d": 5, "l": 4, "gd": 6, "pts": 32 },
+  { "pos": 2, "club": "PSG", "pl": 18, "w": 9, "d": 3, "l": 6, "gd": 19, "pts": 31 },
+  { "pos": 3, "club": "BARCELONA", "pl": 18, "w": 10, "d": 1, "l": 7, "gd": 15, "pts": 31 },
+  { "pos": 4, "club": "NEWCASTLE", "pl": 17, "w": 9, "d": 2, "l": 6, "gd": 13, "pts": 29 },
+  { "pos": 5, "club": "CELTIC", "pl": 17, "w": 8, "d": 3, "l": 6, "gd": 10, "pts": 27 },
+  { "pos": 6, "club": "DORTMUND", "pl": 18, "w": 8, "d": 2, "l": 8, "gd": -2, "pts": 26 },
+  { "pos": 7, "club": "MAN UNITED", "pl": 18, "w": 7, "d": 4, "l": 7, "gd": -9, "pts": 25 },
+  { "pos": 8, "club": "REAL SALT LAKE", "pl": 18, "w": 6, "d": 5, "l": 7, "gd": -9, "pts": 23 },
+  { "pos": 9, "club": "SPORTING CP", "pl": 18, "w": 4, "d": 3, "l": 11, "gd": -18, "pts": 15 },
+  { "pos": 10, "club": "MALMO FF", "pl": 16, "w": 3, "d": 2, "l": 11, "gd": -25, "pts": 11 }
+]
