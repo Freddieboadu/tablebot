@@ -2,23 +2,15 @@ mod commands;
 mod utils;
 
 use std::env;
-use std::sync::Arc;
 
 use anyhow::{Context as AnyhowContext, Result};
 use dotenv::dotenv;
 use poise::serenity_prelude as serenity;
-use tokio::sync::Mutex;
-
-use crate::utils::history::{ensure_data_files, load_history, load_table};
-use crate::utils::table_utils::Table;
 
 pub type Error = anyhow::Error;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 
-pub struct Data {
-    pub table: Arc<Mutex<Table>>,
-    pub history: Arc<Mutex<Vec<Table>>>,
-}
+pub struct Data {}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,8 +22,6 @@ async fn main() -> Result<()> {
         .and_then(|value| value.parse::<u64>().ok())
         .map(serenity::GuildId::new);
 
-    ensure_data_files()?;
-
     let intents = serenity::GatewayIntents::non_privileged();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -41,6 +31,13 @@ async fn main() -> Result<()> {
                 commands::revert::revert(),
                 commands::addteam::addteam(),
                 commands::deleteteam::deleteteam(),
+                commands::cleartable::cleartable(),
+                commands::help::help(),
+                commands::form::form(),
+                commands::fixtures::fixtures(),
+                commands::head2head::head2head(),
+                commands::setadminrole::setadminrole(),
+                commands::setlogchannel::setlogchannel(),
             ],
             ..Default::default()
         })
@@ -52,15 +49,7 @@ async fn main() -> Result<()> {
                 } else {
                     poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 }
-
-                let mut table = load_table()?;
-                crate::utils::table_utils::sort_table(&mut table);
-                crate::utils::table_utils::recalculate_positions(&mut table);
-
-                Ok(Data {
-                    table: Arc::new(Mutex::new(table)),
-                    history: Arc::new(Mutex::new(load_history()?)),
-                })
+                Ok(Data {})
             })
         })
         .build();

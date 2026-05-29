@@ -3,157 +3,84 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 
-use crate::utils::table_utils::{recalculate_positions, sort_table, Table, Team};
+use crate::utils::table_utils::{recalculate_positions, sort_table, Table};
 
-pub const TABLE_PATH: &str = "data/table.json";
-pub const HISTORY_PATH: &str = "data/history.json";
 pub const HISTORY_LIMIT: usize = 20;
 
-pub fn seeded_table() -> Table {
-    vec![
-        Team {
-            pos: 1,
-            club: "CHELSEA".to_string(),
-            pl: 18,
-            w: 9,
-            d: 5,
-            l: 4,
-            gd: 6,
-            pts: 32,
-        },
-        Team {
-            pos: 2,
-            club: "PSG".to_string(),
-            pl: 18,
-            w: 9,
-            d: 3,
-            l: 6,
-            gd: 19,
-            pts: 31,
-        },
-        Team {
-            pos: 3,
-            club: "BARCELONA".to_string(),
-            pl: 18,
-            w: 10,
-            d: 1,
-            l: 7,
-            gd: 15,
-            pts: 31,
-        },
-        Team {
-            pos: 4,
-            club: "NEWCASTLE".to_string(),
-            pl: 17,
-            w: 9,
-            d: 2,
-            l: 6,
-            gd: 13,
-            pts: 29,
-        },
-        Team {
-            pos: 5,
-            club: "CELTIC".to_string(),
-            pl: 17,
-            w: 8,
-            d: 3,
-            l: 6,
-            gd: 10,
-            pts: 27,
-        },
-        Team {
-            pos: 6,
-            club: "DORTMUND".to_string(),
-            pl: 18,
-            w: 8,
-            d: 2,
-            l: 8,
-            gd: -2,
-            pts: 26,
-        },
-        Team {
-            pos: 7,
-            club: "MAN UNITED".to_string(),
-            pl: 18,
-            w: 7,
-            d: 4,
-            l: 7,
-            gd: -9,
-            pts: 25,
-        },
-        Team {
-            pos: 8,
-            club: "REAL SALT LAKE".to_string(),
-            pl: 18,
-            w: 6,
-            d: 5,
-            l: 7,
-            gd: -9,
-            pts: 23,
-        },
-        Team {
-            pos: 9,
-            club: "SPORTING CP".to_string(),
-            pl: 18,
-            w: 4,
-            d: 3,
-            l: 11,
-            gd: -18,
-            pts: 15,
-        },
-        Team {
-            pos: 10,
-            club: "MALMO FF".to_string(),
-            pl: 16,
-            w: 3,
-            d: 2,
-            l: 11,
-            gd: -25,
-            pts: 11,
-        },
-    ]
+// ── Path helpers ─────────────────────────────────────────────────────────────
+
+pub fn guild_dir(guild_id: &str) -> String {
+    format!("data/{}", guild_id)
 }
 
-pub fn ensure_data_files() -> Result<()> {
-    fs::create_dir_all("data").context("Failed to create data directory")?;
+pub fn guild_table_path(guild_id: &str) -> String {
+    format!("data/{}/table.json", guild_id)
+}
 
-    if !Path::new(TABLE_PATH).exists() {
-        let mut table = seeded_table();
-        sort_table(&mut table);
-        recalculate_positions(&mut table);
-        save_table(&table)?;
+pub fn guild_history_path(guild_id: &str) -> String {
+    format!("data/{}/history.json", guild_id)
+}
+
+pub fn guild_fixtures_path(guild_id: &str) -> String {
+    format!("data/{}/fixtures.json", guild_id)
+}
+
+pub fn guild_config_path(guild_id: &str) -> String {
+    format!("data/{}/config.json", guild_id)
+}
+
+// ── Guild initialisation ─────────────────────────────────────────────────────
+
+pub fn ensure_guild_dir(guild_id: &str) -> Result<()> {
+    let dir = guild_dir(guild_id);
+    fs::create_dir_all(&dir)
+        .with_context(|| format!("Failed to create guild directory {}", dir))?;
+
+    let table_path = guild_table_path(guild_id);
+    if !Path::new(&table_path).exists() {
+        save_table(guild_id, &vec![])?;
     }
 
-    if !Path::new(HISTORY_PATH).exists() {
-        save_history(&vec![])?;
+    let history_path = guild_history_path(guild_id);
+    if !Path::new(&history_path).exists() {
+        save_history(guild_id, &vec![])?;
     }
 
     Ok(())
 }
 
-pub fn load_table() -> Result<Table> {
-    let raw = fs::read_to_string(TABLE_PATH).context("Failed to read data/table.json")?;
-    let mut table: Table = serde_json::from_str(&raw).context("Failed to parse data/table.json")?;
+// ── Table ────────────────────────────────────────────────────────────────────
+
+pub fn load_table(guild_id: &str) -> Result<Table> {
+    ensure_guild_dir(guild_id)?;
+    let path = guild_table_path(guild_id);
+    let raw = fs::read_to_string(&path).with_context(|| format!("Failed to read {}", path))?;
+    let mut table: Table =
+        serde_json::from_str(&raw).with_context(|| format!("Failed to parse {}", path))?;
 
     for team in &mut table {
         team.club = team.club.trim().to_uppercase();
     }
-
     sort_table(&mut table);
     recalculate_positions(&mut table);
     Ok(table)
 }
 
-pub fn save_table(table: &Table) -> Result<()> {
+pub fn save_table(guild_id: &str, table: &Table) -> Result<()> {
+    let path = guild_table_path(guild_id);
     let json = serde_json::to_string_pretty(table).context("Failed to serialize table")?;
-    fs::write(TABLE_PATH, format!("{}\n", json)).context("Failed to write data/table.json")?;
+    fs::write(&path, format!("{}\n", json)).with_context(|| format!("Failed to write {}", path))?;
     Ok(())
 }
 
-pub fn load_history() -> Result<Vec<Table>> {
-    let raw = fs::read_to_string(HISTORY_PATH).context("Failed to read data/history.json")?;
+// ── History ──────────────────────────────────────────────────────────────────
+
+pub fn load_history(guild_id: &str) -> Result<Vec<Table>> {
+    ensure_guild_dir(guild_id)?;
+    let path = guild_history_path(guild_id);
+    let raw = fs::read_to_string(&path).with_context(|| format!("Failed to read {}", path))?;
     let mut history: Vec<Table> =
-        serde_json::from_str(&raw).context("Failed to parse data/history.json")?;
+        serde_json::from_str(&raw).with_context(|| format!("Failed to parse {}", path))?;
 
     for table in &mut history {
         for team in table.iter_mut() {
@@ -162,13 +89,13 @@ pub fn load_history() -> Result<Vec<Table>> {
         sort_table(table);
         recalculate_positions(table);
     }
-
     Ok(history)
 }
 
-pub fn save_history(history: &[Table]) -> Result<()> {
+pub fn save_history(guild_id: &str, history: &[Table]) -> Result<()> {
+    let path = guild_history_path(guild_id);
     let json = serde_json::to_string_pretty(history).context("Failed to serialize history")?;
-    fs::write(HISTORY_PATH, format!("{}\n", json)).context("Failed to write data/history.json")?;
+    fs::write(&path, format!("{}\n", json)).with_context(|| format!("Failed to write {}", path))?;
     Ok(())
 }
 

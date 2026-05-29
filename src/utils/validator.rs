@@ -30,17 +30,3 @@ pub fn validate_match_input(
 
     Ok(())
 }
-
-pub fn validate_new_team_name(table: &Table, team_name: &str) -> Result<()> {
-    let normalized = normalize_team_name(team_name);
-
-    if normalized.is_empty() {
-        bail!("Team name cannot be empty.");
-    }
-
-    if find_team_index(table, &normalized).is_some() {
-        bail!("Team '{}' already exists.", normalized);
-    }
-
-    Ok(())
-}
