@@ -35,10 +35,18 @@ async fn main() -> Result<()> {
     dotenv().ok();
 
     let token = env::var("DISCORD_TOKEN").context("Missing DISCORD_TOKEN in environment")?;
-    let guild_id = env::var("GUILD_ID")
+    // Accept either GUILD_IDS (comma-separated) or the legacy GUILD_ID (single).
+    let guild_ids: Vec<serenity::GuildId> = env::var("GUILD_IDS")
+        .or_else(|_| env::var("GUILD_ID"))
         .ok()
-        .and_then(|value| value.parse::<u64>().ok())
-        .map(serenity::GuildId::new);
+        .map(|value| {
+            value
+                .split(',')
+                .filter_map(|part| part.trim().parse::<u64>().ok())
+                .map(serenity::GuildId::new)
+                .collect()
+        })
+        .unwrap_or_default();
 
     let intents = serenity::GatewayIntents::non_privileged();
     let framework = poise::Framework::builder()
@@ -61,11 +69,17 @@ async fn main() -> Result<()> {
         })
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
-                if let Some(id) = guild_id {
-                    poise::builtins::register_in_guild(ctx, &framework.options().commands, id)
-                        .await?;
-                } else {
+                if guild_ids.is_empty() {
                     poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                } else {
+                    for id in guild_ids {
+                        poise::builtins::register_in_guild(
+                            ctx,
+                            &framework.options().commands,
+                            id,
+                        )
+                        .await?;
+                    }
                 }
 
                 Ok(Data {
