@@ -1,5 +1,12 @@
 pub mod addteam;
+pub mod cleartable;
 pub mod deleteteam;
+pub mod fixtures;
+pub mod form;
+pub mod head2head;
+pub mod help;
 pub mod revert;
+pub mod setadminrole;
+pub mod setlogchannel;
 pub mod table;
 pub mod update;
