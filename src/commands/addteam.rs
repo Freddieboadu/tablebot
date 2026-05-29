@@ -44,9 +44,7 @@ pub async fn addteam(
         if name.is_empty() {
             continue;
         }
-        let already_exists = table
-            .iter()
-            .any(|t| t.club.to_uppercase() == name.to_uppercase());
+        let already_exists = table.iter().any(|t| t.club == name);
         if already_exists {
             skipped.push(name);
         } else {

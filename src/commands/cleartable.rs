@@ -111,7 +111,7 @@ pub async fn cleartable(ctx: Context<'_>) -> Result<(), Error> {
     let mut history = load_history(&guild_id)?;
     push_snapshot(&mut history, current_table, HISTORY_LIMIT);
     save_history(&guild_id, &history)?;
-    save_table(&guild_id, &vec![])?;
+    save_table(&guild_id, &[])?;
 
     interaction
         .create_response(

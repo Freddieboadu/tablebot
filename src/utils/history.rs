@@ -3,7 +3,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 
-use crate::utils::table_utils::{recalculate_positions, sort_table, Table};
+use crate::utils::table_utils::{recalculate_positions, sort_table, Table, Team};
 
 pub const HISTORY_LIMIT: usize = 20;
 
@@ -38,12 +38,12 @@ pub fn ensure_guild_dir(guild_id: &str) -> Result<()> {
 
     let table_path = guild_table_path(guild_id);
     if !Path::new(&table_path).exists() {
-        save_table(guild_id, &vec![])?;
+        save_table(guild_id, &[])?;
     }
 
     let history_path = guild_history_path(guild_id);
     if !Path::new(&history_path).exists() {
-        save_history(guild_id, &vec![])?;
+        save_history(guild_id, &[])?;
     }
 
     Ok(())
@@ -66,7 +66,7 @@ pub fn load_table(guild_id: &str) -> Result<Table> {
     Ok(table)
 }
 
-pub fn save_table(guild_id: &str, table: &Table) -> Result<()> {
+pub fn save_table(guild_id: &str, table: &[Team]) -> Result<()> {
     let path = guild_table_path(guild_id);
     let json = serde_json::to_string_pretty(table).context("Failed to serialize table")?;
     fs::write(&path, format!("{}\n", json)).with_context(|| format!("Failed to write {}", path))?;

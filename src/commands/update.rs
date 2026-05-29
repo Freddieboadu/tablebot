@@ -82,8 +82,10 @@ pub async fn update(
     let mut history = load_history(&guild_id)?;
     push_snapshot(&mut history, table.clone(), HISTORY_LIMIT);
 
-    let home_idx = find_team_index(&table, &home_team_key).unwrap();
-    let away_idx = find_team_index(&table, &away_team_key).unwrap();
+    let home_idx = find_team_index(&table, &home_team_key)
+        .expect("home team must exist after validate_match_input passed");
+    let away_idx = find_team_index(&table, &away_team_key)
+        .expect("away team must exist after validate_match_input passed");
 
     table[home_idx].pl += 1;
     table[away_idx].pl += 1;
@@ -114,8 +116,10 @@ pub async fn update(
     sort_table(&mut table);
     recalculate_positions(&mut table);
 
-    let home_pos = find_team_index(&table, &home_team_key).unwrap() + 1;
-    let away_pos = find_team_index(&table, &away_team_key).unwrap() + 1;
+    let home_pos =
+        find_team_index(&table, &home_team_key).expect("home team must still exist after sort") + 1;
+    let away_pos =
+        find_team_index(&table, &away_team_key).expect("away team must still exist after sort") + 1;
 
     save_table(&guild_id, &table)?;
     save_history(&guild_id, &history)?;
