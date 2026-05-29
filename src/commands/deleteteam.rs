@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use poise::serenity_prelude as serenity;
 
-use crate::utils::history::{push_snapshot, save_history, save_table, HISTORY_LIMIT};
+use crate::utils::history::{
+    load_history, load_table, push_snapshot, save_history, save_table, table_exists,
+    FRESH_TABLE_MESSAGE, GUILD_ONLY_MESSAGE, HISTORY_LIMIT,
+};
 use crate::utils::table_utils::{
     find_team_index, normalize_team_name, recalculate_positions, sort_table,
 };
@@ -13,18 +16,33 @@ pub async fn deleteteam(
     ctx: Context<'_>,
     #[description = "Team name"] team_name: String,
 ) -> Result<(), Error> {
+    let Some(guild_id) = ctx.guild_id().map(|id| id.to_string()) else {
+        ctx.send(
+            poise::CreateReply::default()
+                .content(GUILD_ONLY_MESSAGE)
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
+    };
+
     let normalized_name = normalize_team_name(&team_name);
-    {
-        let table = ctx.data().table.lock().await;
-        if find_team_index(&table, &normalized_name).is_none() {
-            ctx.send(
-                poise::CreateReply::default()
-                    .content(format!("Team '{}' was not found.", normalized_name))
-                    .ephemeral(true),
-            )
+    let is_new_server = !table_exists(&guild_id);
+    let table = load_table(&guild_id)?;
+
+    if is_new_server {
+        ctx.send(poise::CreateReply::default().content(FRESH_TABLE_MESSAGE))
             .await?;
-            return Ok(());
-        }
+    }
+
+    if find_team_index(&table, &normalized_name).is_none() {
+        ctx.send(
+            poise::CreateReply::default()
+                .content(format!("Team '{}' was not found.", normalized_name))
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
     }
 
     let confirm_id = format!("confirm_delete:{}:{}", ctx.author().id, normalized_name);
@@ -88,10 +106,9 @@ pub async fn deleteteam(
         return Ok(());
     }
 
-    let (table_to_save, history_to_save) = {
-        let mut table = ctx.data().table.lock().await;
-        let mut history = ctx.data().history.lock().await;
-
+    let (table, history) = {
+        let mut table = load_table(&guild_id)?;
+        let mut history = load_history(&guild_id)?;
         push_snapshot(&mut history, table.clone(), HISTORY_LIMIT);
 
         let Some(index) = find_team_index(&table, &normalized_name) else {
@@ -111,12 +128,11 @@ pub async fn deleteteam(
         table.remove(index);
         sort_table(&mut table);
         recalculate_positions(&mut table);
-
-        (table.clone(), history.clone())
+        (table, history)
     };
 
-    save_table(&table_to_save)?;
-    save_history(&history_to_save)?;
+    save_table(&guild_id, &table)?;
+    save_history(&guild_id, &history)?;
 
     interaction
         .create_response(

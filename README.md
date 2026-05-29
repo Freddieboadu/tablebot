@@ -9,7 +9,7 @@ A Discord league table bot for PBL, rebuilt in **Rust** using **Serenity + Poise
 - `/revert` to undo the latest table mutation using history
 - `/addteam` to add a new team
 - `/deleteteam` to remove a team with Yes/No button confirmation
-- File-based persistence using `data/table.json` and `data/history.json`
+- Multi-server support with per-guild persistence in `data/{guild_id}/table.json` and `data/{guild_id}/history.json`
 
 ## Prerequisites
 
@@ -35,13 +35,21 @@ A Discord league table bot for PBL, rebuilt in **Rust** using **Serenity + Poise
 
    - `DISCORD_TOKEN`
    - `CLIENT_ID`
-   - `GUILD_ID`
 
 4. Run the bot:
 
    ```bash
    cargo run
    ```
+
+5. Global slash command propagation can take up to 1 hour after first run.
+
+## Multi-server support
+
+- Commands are registered globally (no `GUILD_ID` required).
+- Each Discord server gets an independent table/history under `data/{guild_id}/`.
+- On first use in a server, the bot creates that server's data files and starts with an empty table.
+- Development tip: for instant command updates while iterating, you can temporarily switch to guild-specific command registration in `src/main.rs`.
 
 ## Commands
 
@@ -102,7 +110,7 @@ If a user lacks permission, Discord returns an ephemeral permission error.
 
 ## Revert System
 
-- Every destructive mutation pushes the previous table into `data/history.json`
+- Every destructive mutation pushes the previous table into that server's `data/{guild_id}/history.json`
 - History acts as a stack
 - `/revert` pops the latest state and restores it
 - History is capped to the latest 20 entries
@@ -117,18 +125,3 @@ If a user lacks permission, Discord returns an ephemeral permission error.
    - `bot` and `applications.commands` scopes
    - Required permissions (including Manage Guild for admin commands)
 6. Open generated URL and invite bot to your server
-
-## Current Seeded League Table
-
-| POS | CLUB | PL | W | D | L | GD | PTS |
-|---:|---|---:|---:|---:|---:|---:|---:|
-| 1 | CHELSEA | 18 | 9 | 5 | 4 | 6 | 32 |
-| 2 | PSG | 18 | 9 | 3 | 6 | 19 | 31 |
-| 3 | BARCELONA | 18 | 10 | 1 | 7 | 15 | 31 |
-| 4 | NEWCASTLE | 17 | 9 | 2 | 6 | 13 | 29 |
-| 5 | CELTIC | 17 | 8 | 3 | 6 | 10 | 27 |
-| 6 | DORTMUND | 18 | 8 | 2 | 8 | -2 | 26 |
-| 7 | MAN UNITED | 18 | 7 | 4 | 7 | -9 | 25 |
-| 8 | REAL SALT LAKE | 18 | 6 | 5 | 7 | -9 | 23 |
-| 9 | SPORTING CP | 18 | 4 | 3 | 11 | -18 | 15 |
-| 10 | MALMO FF | 16 | 3 | 2 | 11 | -25 | 11 |
