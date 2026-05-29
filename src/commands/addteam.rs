@@ -1,7 +1,13 @@
 use poise::serenity_prelude as serenity;
 
+<<<<<<< HEAD
 use crate::utils::history::{load_table, save_table};
 use crate::utils::permissions::{is_admin, post_to_log_channel};
+=======
+use crate::utils::history::{
+    load_table, save_table, table_exists, FRESH_TABLE_MESSAGE, GUILD_ONLY_MESSAGE,
+};
+>>>>>>> origin/copilot/rebuild-league-table-bot
 use crate::utils::table_utils::{normalize_team_name, recalculate_positions, sort_table, Team};
 use crate::{Context, Error};
 
@@ -11,6 +17,7 @@ pub async fn addteam(
     #[description = "Team name(s), separated by commas — e.g. Chelsea, PSG, Barcelona"]
     teams: String,
 ) -> Result<(), Error> {
+<<<<<<< HEAD
     let guild_id = match ctx.guild_id() {
         Some(id) => id.to_string(),
         None => {
@@ -87,6 +94,43 @@ pub async fn addteam(
             skipped.join(", ")
         ));
     }
+=======
+    let Some(guild_id) = ctx.guild_id().map(|id| id.to_string()) else {
+        ctx.send(
+            poise::CreateReply::default()
+                .content(GUILD_ONLY_MESSAGE)
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
+    };
+
+    let normalized_name = normalize_team_name(&team_name);
+    let is_new_server = !table_exists(&guild_id);
+    if is_new_server {
+        ctx.send(poise::CreateReply::default().content(FRESH_TABLE_MESSAGE))
+            .await?;
+    }
+
+    let mut table = load_table(&guild_id)?;
+    validate_new_team_name(&table, &normalized_name)?;
+    let next_pos = table.len() + 1;
+
+    table.push(Team {
+        pos: next_pos,
+        club: normalized_name.clone(),
+        pl: 0,
+        w: 0,
+        d: 0,
+        l: 0,
+        gd: 0,
+        pts: 0,
+    });
+    sort_table(&mut table);
+    recalculate_positions(&mut table);
+
+    save_table(&guild_id, &table)?;
+>>>>>>> origin/copilot/rebuild-league-table-bot
 
     let embed = serenity::CreateEmbed::new()
         .title("👥 Teams Updated")

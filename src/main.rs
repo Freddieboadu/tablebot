@@ -6,6 +6,11 @@ use std::env;
 use anyhow::{Context as AnyhowContext, Result};
 use dotenv::dotenv;
 use poise::serenity_prelude as serenity;
+<<<<<<< HEAD
+=======
+
+use crate::utils::history::ensure_data_dir;
+>>>>>>> origin/copilot/rebuild-league-table-bot
 
 pub type Error = anyhow::Error;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
@@ -17,11 +22,12 @@ async fn main() -> Result<()> {
     dotenv().ok();
 
     let token = env::var("DISCORD_TOKEN").context("Missing DISCORD_TOKEN in environment")?;
-    let guild_id = env::var("GUILD_ID")
-        .ok()
-        .and_then(|value| value.parse::<u64>().ok())
-        .map(serenity::GuildId::new);
 
+<<<<<<< HEAD
+=======
+    ensure_data_dir()?;
+
+>>>>>>> origin/copilot/rebuild-league-table-bot
     let intents = serenity::GatewayIntents::non_privileged();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -43,12 +49,16 @@ async fn main() -> Result<()> {
         })
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
+<<<<<<< HEAD
                 if let Some(id) = guild_id {
                     poise::builtins::register_in_guild(ctx, &framework.options().commands, id)
                         .await?;
                 } else {
                     poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 }
+=======
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+>>>>>>> origin/copilot/rebuild-league-table-bot
                 Ok(Data {})
             })
         })

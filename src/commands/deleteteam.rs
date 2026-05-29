@@ -3,9 +3,15 @@ use std::time::Duration;
 use poise::serenity_prelude as serenity;
 
 use crate::utils::history::{
+<<<<<<< HEAD
     load_history, load_table, push_snapshot, save_history, save_table, HISTORY_LIMIT,
 };
 use crate::utils::permissions::{is_admin, post_to_log_channel};
+=======
+    load_history, load_table, push_snapshot, save_history, save_table, table_exists,
+    FRESH_TABLE_MESSAGE, GUILD_ONLY_MESSAGE, HISTORY_LIMIT,
+};
+>>>>>>> origin/copilot/rebuild-league-table-bot
 use crate::utils::table_utils::{
     find_team_index, normalize_team_name, recalculate_positions, sort_table,
 };
@@ -29,6 +35,7 @@ pub async fn deleteteam(
     #[autocomplete = "autocomplete_team"]
     teams: String,
 ) -> Result<(), Error> {
+<<<<<<< HEAD
     let guild_id = match ctx.guild_id() {
         Some(id) => id.to_string(),
         None => {
@@ -46,6 +53,31 @@ pub async fn deleteteam(
         ctx.send(
             poise::CreateReply::default()
                 .content("❌ You need the league admin role to use this command!")
+=======
+    let Some(guild_id) = ctx.guild_id().map(|id| id.to_string()) else {
+        ctx.send(
+            poise::CreateReply::default()
+                .content(GUILD_ONLY_MESSAGE)
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
+    };
+
+    let normalized_name = normalize_team_name(&team_name);
+    let is_new_server = !table_exists(&guild_id);
+    let table = load_table(&guild_id)?;
+
+    if is_new_server {
+        ctx.send(poise::CreateReply::default().content(FRESH_TABLE_MESSAGE))
+            .await?;
+    }
+
+    if find_team_index(&table, &normalized_name).is_none() {
+        ctx.send(
+            poise::CreateReply::default()
+                .content(format!("Team '{}' was not found.", normalized_name))
+>>>>>>> origin/copilot/rebuild-league-table-bot
                 .ephemeral(true),
         )
         .await?;
@@ -165,6 +197,7 @@ pub async fn deleteteam(
         return Ok(());
     }
 
+<<<<<<< HEAD
     // Perform deletion.
     let mut table = load_table(&guild_id)?;
     let mut history = load_history(&guild_id)?;
@@ -177,16 +210,33 @@ pub async fn deleteteam(
             actually_deleted.push(name.clone());
         }
     }
+=======
+    let (table, history) = {
+        let mut table = load_table(&guild_id)?;
+        let mut history = load_history(&guild_id)?;
+        push_snapshot(&mut history, table.clone(), HISTORY_LIMIT);
+>>>>>>> origin/copilot/rebuild-league-table-bot
 
     sort_table(&mut table);
     recalculate_positions(&mut table);
     save_table(&guild_id, &table)?;
     save_history(&guild_id, &history)?;
 
+<<<<<<< HEAD
     let mut result_desc = format!("✅ **Deleted:** {}", actually_deleted.join(", "));
     if !not_found.is_empty() {
         result_desc.push_str(&format!("\n⚠️ **Not found:** {}", not_found.join(", ")));
     }
+=======
+        table.remove(index);
+        sort_table(&mut table);
+        recalculate_positions(&mut table);
+        (table, history)
+    };
+
+    save_table(&guild_id, &table)?;
+    save_history(&guild_id, &history)?;
+>>>>>>> origin/copilot/rebuild-league-table-bot
 
     interaction
         .create_response(
