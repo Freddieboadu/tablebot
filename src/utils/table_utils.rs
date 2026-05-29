@@ -14,6 +14,20 @@ pub struct Team {
 
 pub type Table = Vec<Team>;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Fixture {
+    pub home_team: String,
+    pub away_team: String,
+    pub home_score: i32,
+    pub away_score: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Settings {
+    pub admin_role_id: Option<u64>,
+    pub log_channel_id: Option<u64>,
+}
+
 pub fn normalize_team_name(name: &str) -> String {
     name.trim().to_uppercase()
 }

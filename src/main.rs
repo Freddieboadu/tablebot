@@ -1,6 +1,7 @@
 mod commands;
 mod utils;
 
+use std::collections::HashMap;
 use std::env;
 use std::sync::Arc;
 
@@ -9,15 +10,24 @@ use dotenv::dotenv;
 use poise::serenity_prelude as serenity;
 use tokio::sync::Mutex;
 
-use crate::utils::history::{ensure_data_files, load_history, load_table};
-use crate::utils::table_utils::Table;
+use crate::utils::history::GuildData;
 
 pub type Error = anyhow::Error;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 pub struct Data {
-    pub table: Arc<Mutex<Table>>,
-    pub history: Arc<Mutex<Vec<Table>>>,
+    pub guilds: Arc<Mutex<HashMap<u64, Arc<Mutex<GuildData>>>>>,
+}
+
+impl Data {
+    pub async fn get_guild(&self, guild_id: u64) -> Arc<Mutex<GuildData>> {
+        let mut guilds = self.guilds.lock().await;
+        Arc::clone(guilds.entry(guild_id).or_insert_with(|| {
+            Arc::new(Mutex::new(
+                GuildData::load(guild_id).unwrap_or_default(),
+            ))
+        }))
+    }
 }
 
 #[tokio::main]
@@ -30,8 +40,6 @@ async fn main() -> Result<()> {
         .and_then(|value| value.parse::<u64>().ok())
         .map(serenity::GuildId::new);
 
-    ensure_data_files()?;
-
     let intents = serenity::GatewayIntents::non_privileged();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -41,6 +49,13 @@ async fn main() -> Result<()> {
                 commands::revert::revert(),
                 commands::addteam::addteam(),
                 commands::deleteteam::deleteteam(),
+                commands::cleartable::cleartable(),
+                commands::form::form(),
+                commands::fixtures::fixtures(),
+                commands::head2head::head2head(),
+                commands::help::help(),
+                commands::setadminrole::setadminrole(),
+                commands::setlogchannel::setlogchannel(),
             ],
             ..Default::default()
         })
@@ -53,13 +68,8 @@ async fn main() -> Result<()> {
                     poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 }
 
-                let mut table = load_table()?;
-                crate::utils::table_utils::sort_table(&mut table);
-                crate::utils::table_utils::recalculate_positions(&mut table);
-
                 Ok(Data {
-                    table: Arc::new(Mutex::new(table)),
-                    history: Arc::new(Mutex::new(load_history()?)),
+                    guilds: Arc::new(Mutex::new(HashMap::new())),
                 })
             })
         })

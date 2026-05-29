@@ -4,16 +4,10 @@ use poise::serenity_prelude as serenity;
 
 use crate::utils::history::{push_snapshot, save_history, save_table, HISTORY_LIMIT};
 use crate::utils::permissions::check_admin;
-use crate::utils::table_utils::{
-    find_team_index, normalize_team_name, recalculate_positions, sort_table,
-};
 use crate::{Context, Error};
 
 #[poise::command(slash_command)]
-pub async fn deleteteam(
-    ctx: Context<'_>,
-    #[description = "Team name(s), comma-separated"] teams: String,
-) -> Result<(), Error> {
+pub async fn cleartable(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = match ctx.guild_id() {
         Some(id) => id.get(),
         None => {
@@ -30,34 +24,11 @@ pub async fn deleteteam(
         return Ok(());
     }
 
-    let names: Vec<String> = teams
-        .split(',')
-        .map(|s| normalize_team_name(s))
-        .filter(|s| !s.is_empty())
-        .collect();
-
-    if names.is_empty() {
-        ctx.send(poise::CreateReply::default().content("No valid team names provided.").ephemeral(true)).await?;
-        return Ok(());
-    }
-
-    // Validate all teams exist before showing confirmation
-    {
-        let guild = guild_lock.lock().await;
-        for name in &names {
-            if find_team_index(&guild.table, name).is_none() {
-                ctx.send(poise::CreateReply::default().content(format!("Team '{}' was not found.", name)).ephemeral(true)).await?;
-                return Ok(());
-            }
-        }
-    }
-
-    let confirm_id = format!("confirm_delete:{}", ctx.author().id);
-    let cancel_id = format!("cancel_delete:{}", ctx.author().id);
-    let list = names.join(", ");
+    let confirm_id = format!("confirm_clear:{}", ctx.author().id);
+    let cancel_id = format!("cancel_clear:{}", ctx.author().id);
 
     let prompt = poise::CreateReply::default()
-        .content(format!("Delete **{}** from the league table?", list))
+        .content("Are you sure you want to clear the entire league table?")
         .components(vec![serenity::CreateActionRow::Buttons(vec![
             serenity::CreateButton::new(confirm_id.clone())
                 .label("Yes")
@@ -77,14 +48,14 @@ pub async fn deleteteam(
         .await;
 
     let Some(interaction) = interaction else {
-        ctx.send(poise::CreateReply::default().content("Delete request timed out.").ephemeral(true)).await?;
+        ctx.send(poise::CreateReply::default().content("Clear request timed out.").ephemeral(true)).await?;
         return Ok(());
     };
 
     if interaction.data.custom_id == cancel_id {
         interaction
             .create_response(ctx.serenity_context(), serenity::CreateInteractionResponse::UpdateMessage(
-                serenity::CreateInteractionResponseMessage::new().content("Delete cancelled.").components(vec![]),
+                serenity::CreateInteractionResponseMessage::new().content("Clear cancelled.").components(vec![]),
             ))
             .await?;
         return Ok(());
@@ -93,34 +64,18 @@ pub async fn deleteteam(
     if interaction.data.custom_id != confirm_id {
         interaction
             .create_response(ctx.serenity_context(), serenity::CreateInteractionResponse::UpdateMessage(
-                serenity::CreateInteractionResponseMessage::new().content("Unknown response; delete cancelled.").components(vec![]),
+                serenity::CreateInteractionResponseMessage::new().content("Unknown response; clear cancelled.").components(vec![]),
             ))
             .await?;
         return Ok(());
     }
 
-    let maybe_result = {
+    let (table_to_save, history_to_save) = {
         let mut guild = guild_lock.lock().await;
         let snapshot = guild.table.clone();
         push_snapshot(&mut guild.history, snapshot, HISTORY_LIMIT);
-
-        let mut all_found = true;
-        for name in &names {
-            if let Some(index) = find_team_index(&guild.table, name) {
-                guild.table.remove(index);
-            } else {
-                all_found = false;
-            }
-        }
-
-        sort_table(&mut guild.table);
-        recalculate_positions(&mut guild.table);
-
-        Some((guild.table.clone(), guild.history.clone(), all_found))
-    };
-
-    let Some((table_to_save, history_to_save, _)) = maybe_result else {
-        return Ok(());
+        guild.table.clear();
+        (guild.table.clone(), guild.history.clone())
     };
 
     save_table(guild_id, &table_to_save)?;
@@ -129,12 +84,11 @@ pub async fn deleteteam(
     interaction
         .create_response(ctx.serenity_context(), serenity::CreateInteractionResponse::UpdateMessage(
             serenity::CreateInteractionResponseMessage::new()
-                .content(format!("**{}** removed from the league table.", list))
+                .content("League table has been cleared. Use `/addteam` to start fresh.")
                 .components(vec![]),
         ))
         .await?;
 
     Ok(())
 }
-
 
