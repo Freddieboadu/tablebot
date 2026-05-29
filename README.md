@@ -1,134 +1,267 @@
-# PBL League Table Bot (Rust)
+# 🏆 PBL League Table Bot
 
-A Discord league table bot for PBL, rebuilt in **Rust** using **Serenity + Poise**.
+A Discord bot for managing your FIFA Pro Clubs league table. Enter match results, track standings, view form guides and head-to-head records — all without leaving Discord.
 
-## Features
+---
 
-- `/table` to display the current league table in an embed
-- `/update` to enter match results and update both teams
-- `/revert` to undo the latest table mutation using history
-- `/addteam` to add a new team
-- `/deleteteam` to remove a team with Yes/No button confirmation
-- File-based persistence using `data/table.json` and `data/history.json`
+## 📋 For New Users — How to Use the Bot
 
-## Prerequisites
+> **Copy and paste any of these commands directly into Discord!**
 
-- [Rust toolchain](https://www.rust-lang.org/tools/install)
-- `cargo`
+---
 
-## Setup
+### 👋 First Time? Start Here
 
-1. Clone the repository:
+Type this to see all available commands:
+```
+/help
+```
 
-   ```bash
-   git clone https://github.com/Freddieboadu/tablebot.git
-   cd tablebot
-   ```
+---
 
-2. Create your environment file:
+### 📊 Viewing the Table
 
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Fill in `.env` values:
-
-   - `DISCORD_TOKEN`
-   - `CLIENT_ID`
-   - `GUILD_ID`
-
-4. Run the bot:
-
-   ```bash
-   cargo run
-   ```
-
-## Commands
-
-### `/table`
-Display the full table.
-
-Example:
-
-```text
+See the full league standings:
+```
 /table
 ```
 
-### `/update <home_team> <home_score> <away_team> <away_score>`
-Update the table based on a match result.
+---
 
-Example:
+### ⚽ Entering a Match Result
 
-```text
-/update home_team:PSG home_score:4 away_team:DORTMUND away_score:0
+After every game, enter the result using:
+```
+/update home_team:CHELSEA home_score:2 away_team:PSG away_score:1
+```
+> Just replace the team names and scores with your actual result. The table updates automatically!
+
+---
+
+### 📈 Checking a Team's Form
+
+See a team's last 5 results (Wins, Draws, Losses):
+```
+/form team_name:CHELSEA
+```
+Example output: `🟢 W  🟢 W  🔴 L  🟡 D  🟢 W`
+
+---
+
+### 📋 Recent Results
+
+See the last 10 match results entered:
+```
+/fixtures
 ```
 
-### `/revert`
-Revert the latest saved table state.
+---
 
-Example:
+### ⚔️ Head-to-Head Record
 
-```text
+See all results between two specific teams:
+```
+/head2head team1:CHELSEA team2:PSG
+```
+
+---
+
+### ↩️ Made a Mistake?
+
+Undo the last change to the table *(admin only)*:
+```
 /revert
 ```
 
-### `/addteam <team_name>`
-Add a team with all zero stats.
+---
 
-Example:
+## 🔐 For League Admins
 
-```text
-/addteam team_name:ARSENAL
+> These commands require the **league admin role** or **Manage Server** permission.
+
+---
+
+### ➕ Adding Teams
+
+Add one team:
+```
+/addteam teams:CHELSEA
 ```
 
-### `/deleteteam <team_name>`
-Delete a team after clicking **Yes** on the confirmation buttons.
-
-Example:
-
-```text
-/deleteteam team_name:MALMO FF
+Add multiple teams at once (separated by commas):
+```
+/addteam teams:CHELSEA, PSG, BARCELONA, CELTIC, DORTMUND
 ```
 
-## Permissions
+---
 
-Admin commands require **Manage Server / MANAGE_GUILD**:
+### ❌ Removing Teams
 
-- `/revert`
-- `/addteam`
-- `/deleteteam`
+Remove one team:
+```
+/deleteteam teams:CHELSEA
+```
 
-If a user lacks permission, Discord returns an ephemeral permission error.
+Remove multiple teams at once:
+```
+/deleteteam teams:CHELSEA, PSG
+```
+> You will be asked to confirm before anything is deleted.
 
-## Revert System
+---
 
-- Every destructive mutation pushes the previous table into `data/history.json`
-- History acts as a stack
-- `/revert` pops the latest state and restores it
-- History is capped to the latest 20 entries
+### 🗑️ Clear the Entire Table
 
-## Creating a Discord Bot (quick steps)
+Wipe the table and start completely fresh:
+```
+/cleartable
+```
+> You will be asked to confirm. This can be undone with `/revert`.
 
-1. Open [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create **New Application**
-3. Open **Bot** tab and create bot user
-4. Copy bot token into `.env` as `DISCORD_TOKEN`
-5. In **OAuth2 > URL Generator**, enable:
-   - `bot` and `applications.commands` scopes
-   - Required permissions (including Manage Guild for admin commands)
-6. Open generated URL and invite bot to your server
+---
 
-## Current Seeded League Table
+### 🔐 Set the Admin Role
 
-| POS | CLUB | PL | W | D | L | GD | PTS |
-|---:|---|---:|---:|---:|---:|---:|---:|
-| 1 | CHELSEA | 18 | 9 | 5 | 4 | 6 | 32 |
-| 2 | PSG | 18 | 9 | 3 | 6 | 19 | 31 |
-| 3 | BARCELONA | 18 | 10 | 1 | 7 | 15 | 31 |
-| 4 | NEWCASTLE | 17 | 9 | 2 | 6 | 13 | 29 |
-| 5 | CELTIC | 17 | 8 | 3 | 6 | 10 | 27 |
-| 6 | DORTMUND | 18 | 8 | 2 | 8 | -2 | 26 |
-| 7 | MAN UNITED | 18 | 7 | 4 | 7 | -9 | 25 |
-| 8 | REAL SALT LAKE | 18 | 6 | 5 | 7 | -9 | 23 |
-| 9 | SPORTING CP | 18 | 4 | 3 | 11 | -18 | 15 |
-| 10 | MALMO FF | 16 | 3 | 2 | 11 | -25 | 11 |
+Restrict table editing to a specific role:
+```
+/setadminrole role:@LeagueAdmin
+```
+> Anyone without this role (or Manage Server) will be blocked from making changes.
+
+---
+
+### 📢 Set a Log Channel
+
+Automatically post every table change to a channel:
+```
+/setlogchannel channel:#league-logs
+```
+> Every `/update`, `/revert`, `/addteam` etc. will be posted here automatically.
+
+---
+
+## 🏁 New Season Setup (Step by Step)
+
+Follow these steps at the start of every new season:
+
+**Step 1 — Clear the old table**
+```
+/cleartable
+```
+
+**Step 2 — Add all your teams**
+```
+/addteam teams:CHELSEA, PSG, BARCELONA, CELTIC, DORTMUND, MAN UNITED
+```
+
+**Step 3 — Verify the table looks right**
+```
+/table
+```
+
+**Step 4 — You're ready! Enter results after every game**
+```
+/update home_team:CHELSEA home_score:3 away_team:PSG away_score:1
+```
+
+---
+
+## 📖 Full Command Reference
+
+| Command | What it does | Admin only? |
+|---------|-------------|-------------|
+| `/table` | Show the league table | ❌ |
+| `/form team_name:X` | Show a team's last 5 results | ❌ |
+| `/fixtures` | Show last 10 results | ❌ |
+| `/head2head team1:X team2:Y` | Show H2H record between 2 teams | ❌ |
+| `/help` | List all commands | ❌ |
+| `/update home_team:X home_score:N away_team:Y away_score:N` | Enter a result | ✅ |
+| `/revert` | Undo last change | ✅ |
+| `/addteam teams:X, Y, Z` | Add teams (comma separated) | ✅ |
+| `/deleteteam teams:X, Y` | Delete teams (comma separated) | ✅ |
+| `/cleartable` | Wipe the table | ✅ |
+| `/setadminrole role:@Role` | Set who can edit the table | ✅ |
+| `/setlogchannel channel:#channel` | Set log channel | ✅ |
+
+---
+
+## ↩️ Revert System
+
+- Every change to the table is saved automatically before it happens
+- `/revert` undoes the most recent change
+- Up to **20 previous states** are stored per server
+- Works after `/update`, `/cleartable`, `/addteam`, `/deleteteam`
+
+---
+
+## 🌍 Multi-Server Support
+
+Each Discord server has its own completely independent table, history, and settings. Data is never shared between servers.
+
+---
+
+## 🛠️ Self-Hosting Setup (For Developers)
+
+### Prerequisites
+- [Rust](https://www.rust-lang.org/tools/install) installed
+- A Discord bot token from the [Discord Developer Portal](https://discord.com/developers/applications)
+
+### Installation
+
+**1. Clone the repo**
+```bash
+git clone https://github.com/Freddieboadu/tablebot.git
+cd tablebot
+```
+
+**2. Create your `.env` file**
+```bash
+cp .env.example .env
+```
+
+**3. Fill in your `.env`**
+```env
+DISCORD_TOKEN=your_bot_token_here
+CLIENT_ID=your_application_client_id_here
+```
+
+**4. Run the bot**
+```bash
+cargo run
+```
+You should see: `✅ PBL TableBot is online!`
+
+**5. Invite the bot to your server**
+
+Paste this in your browser (replace `YOUR_CLIENT_ID`):
+```
+https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=277025508352&scope=bot+applications.commands
+```
+
+> ⏱️ Slash commands can take up to **1 hour** to appear after first launch. This is a Discord limitation.
+
+---
+
+### Getting Your Bot Token
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click your application → **Bot** tab
+3. Click **Reset Token** and copy it
+4. Paste it as `DISCORD_TOKEN` in your `.env`
+5. Your **Application ID** on the General Information page = `CLIENT_ID`
+
+> ⚠️ Never share your token or commit it to GitHub!
+
+---
+
+## 🖥️ Keeping the Bot Online 24/7
+
+The bot only runs while your terminal is open. To keep it always on:
+
+| Platform | Cost | How |
+|----------|------|-----|
+| [Railway.app](https://railway.app) | Free tier | Connect GitHub repo → auto-deploys on every push |
+| [Render.com](https://render.com) | Free tier | Similar to Railway |
+| VPS (Hetzner/DigitalOcean) | ~$5/mo | Full control |
+
+**Railway is recommended** — it redeploys automatically every time you merge changes.
