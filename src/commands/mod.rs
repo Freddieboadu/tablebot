@@ -10,3 +10,4 @@ pub mod setadminrole;
 pub mod setlogchannel;
 pub mod table;
 pub mod update;
+pub mod website;

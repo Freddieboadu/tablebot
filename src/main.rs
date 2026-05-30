@@ -1,5 +1,6 @@
 mod commands;
 mod utils;
+mod web;
 
 use std::collections::HashMap;
 use std::env;
@@ -48,6 +49,15 @@ async fn main() -> Result<()> {
         })
         .unwrap_or_default();
 
+    // Start the public league-table website alongside the bot.
+    let web_port: u16 = env::var("WEB_PORT")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8080);
+    tokio::spawn(async move {
+        web::serve(web_port).await;
+    });
+
     let intents = serenity::GatewayIntents::non_privileged();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -64,6 +74,7 @@ async fn main() -> Result<()> {
                 commands::help::help(),
                 commands::setadminrole::setadminrole(),
                 commands::setlogchannel::setlogchannel(),
+                commands::website::website(),
             ],
             ..Default::default()
         })

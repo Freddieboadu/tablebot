@@ -12,6 +12,7 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
              `/form team_name:X` — Team's last 5 results\n\
              `/fixtures` — Last 10 match results\n\
              `/head2head team1:X team2:Y` — H2H record\n\
+             `/website` — Get the live web table link\n\
              `/help` — Show this message",
             false,
         )
