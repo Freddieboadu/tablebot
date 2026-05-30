@@ -24,9 +24,15 @@ pub async fn table(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     let formatted = format_table_monospace(&table_snapshot);
+    let leader = &table_snapshot[0].club;
     let embed = serenity::CreateEmbed::new()
-        .title("PBL League Table")
+        .title("🏆 PBL League Table")
         .description(format!("```\n{}\n```", formatted))
+        .footer(serenity::CreateEmbedFooter::new(format!(
+            "Leaders: {} · {} teams",
+            leader,
+            table_snapshot.len()
+        )))
         .color(serenity::Color::BLUE);
 
     ctx.send(poise::CreateReply::default().embed(embed)).await?;

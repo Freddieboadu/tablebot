@@ -56,18 +56,40 @@ pub fn recalculate_positions(table: &mut Table) {
 }
 
 pub fn format_table_monospace(table: &Table) -> String {
-    let mut output = String::from("POS CLUB               PL  W  D  L   GD  PTS\n");
+    // Keep lines narrow (~30 chars) and strictly ASCII so the table renders
+    // identically on Discord mobile and desktop without wrapping. Emoji are
+    // double-width and break alignment inside code blocks, so they are avoided.
+    const CLUB_WIDTH: usize = 8;
+
+    fn row(pos: &str, club: &str, pl: &str, w: &str, d: &str, l: &str, gd: &str, pts: &str) -> String {
+        format!(
+            "{:>2} {:<width$} {:>2} {:>2} {:>2} {:>2} {:>3} {:>3}\n",
+            pos, club, pl, w, d, l, gd, pts,
+            width = CLUB_WIDTH,
+        )
+    }
+
+    let mut output = String::new();
+    output.push_str(&row("#", "CLUB", "PL", "W", "D", "L", "GD", "PTS"));
 
     for team in table {
-        let pos_label = if team.pos == 1 {
-            format!("🏆{}", team.pos)
+        // Truncate long club names so columns stay aligned.
+        let club = if team.club.chars().count() > CLUB_WIDTH {
+            let truncated: String = team.club.chars().take(CLUB_WIDTH - 1).collect();
+            format!("{}…", truncated)
         } else {
-            team.pos.to_string()
+            team.club.clone()
         };
 
-        output.push_str(&format!(
-            "{:<3} {:<18} {:>2} {:>2} {:>2} {:>2} {:>4} {:>4}\n",
-            pos_label, team.club, team.pl, team.w, team.d, team.l, team.gd, team.pts
+        output.push_str(&row(
+            &team.pos.to_string(),
+            &club,
+            &team.pl.to_string(),
+            &team.w.to_string(),
+            &team.d.to_string(),
+            &team.l.to_string(),
+            &format!("{:+}", team.gd),
+            &team.pts.to_string(),
         ));
     }
 
