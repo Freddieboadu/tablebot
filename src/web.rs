@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 
 use axum::{
     extract::Path,
-    http::StatusCode,
+    http::{header, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
     Json, Router,
@@ -17,6 +17,7 @@ use crate::utils::history::load_table;
 fn app() -> Router {
     Router::new()
         .route("/", get(root_redirect))
+        .route("/logo.png", get(serve_logo))
         .route("/g/:guild_id", get(table_page))
         .route("/api/table/:guild_id", get(table_api))
         .layer(CorsLayer::permissive())
@@ -35,6 +36,18 @@ pub async fn serve(port: u16) {
         Err(err) => {
             eprintln!("Failed to bind web server on port {port}: {err}");
         }
+    }
+}
+
+/// Serve the PBL logo from disk (data/logo.png). Returns 404 if not uploaded yet.
+async fn serve_logo() -> Response {
+    match fs::read("data/logo.png") {
+        Ok(bytes) => (
+            [(header::CONTENT_TYPE, "image/png"),
+             (header::CACHE_CONTROL, "public, max-age=86400")],
+            bytes,
+        ).into_response(),
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
 }
 
@@ -111,7 +124,7 @@ async fn root_redirect() -> Response {
 <style>{styles}</style>
 </head>
 <body>
-<header class="topbar"><div class="wrap"><h1>PBL <span>League Tables</span></h1></div></header>
+<header class="topbar"><div class="topbar-inner"><img class="topbar-logo" src="/logo.png" alt="PBL" /><h1>PBL <span>League Tables</span></h1></div></header>
 <main class="wrap">
 <div class="cards">
 {cards}
@@ -147,7 +160,7 @@ async fn table_page(Path(guild_id): Path<u64>) -> Response {
 <style>{styles}</style>
 </head>
 <body>
-<header class="topbar"><div class="wrap"><h1>PBL <span>League Table</span></h1></div></header>
+<header class="topbar"><div class="topbar-inner"><img class="topbar-logo" src="/logo.png" alt="PBL" /><h1>PBL <span>League Table</span></h1></div></header>
 <main class="wrap">
 <div class="table-card">
 <div class="table-head">
@@ -227,41 +240,71 @@ setInterval(load, 10000);
     Html(body).into_response()
 }
 
-/// Shared Premier League-inspired stylesheet.
+/// Shared PBL-branded stylesheet (black / neon-green theme).
 const STYLES: &str = r#"
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --pl-purple: #37003c;
-  --pl-magenta: #e90052;
-  --pl-green: #00ff85;
-  --pl-cyan: #04f5ff;
-  --ink: #2c2c2c;
-  --line: #ececff;
+  --pbl-green:   #57ff14;
+  --pbl-green2:  #3dbb0a;
+  --pbl-black:   #0a0a0a;
+  --pbl-surface: #161616;
+  --pbl-border:  #2a2a2a;
+  --pbl-text:    #f0f0f0;
+  --pbl-muted:   #888888;
+  --pbl-champion: #57ff14;
+  --pbl-top:      #00cfff;
+  --pbl-releg:    #ff3333;
+  --ink: #f0f0f0;
+  --line: #2a2a2a;
 }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #f3f3fb;
-  color: var(--ink);
+  background: #111;
+  color: var(--pbl-text);
   min-height: 100vh;
 }
 .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+
+/* ── Header ── */
 .topbar {
-  background: linear-gradient(90deg, var(--pl-purple), #5a0a63);
-  padding: 22px 0;
-  box-shadow: 0 2px 12px rgba(55,0,60,.25);
+  background: var(--pbl-black);
+  border-bottom: 2px solid var(--pbl-green);
+  padding: 0;
+  box-shadow: 0 0 24px rgba(87,255,20,.15);
+}
+.topbar-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 70px;
+}
+.topbar-logo {
+  height: 54px;
+  width: 54px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .topbar h1 {
-  color: #fff; font-size: 22px; font-weight: 800; letter-spacing: .5px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  line-height: 1;
 }
-.topbar h1 span { color: var(--pl-green); }
+.topbar h1 span { color: var(--pbl-green); }
+
 main.wrap { padding-top: 24px; padding-bottom: 40px; }
 
-/* Table card */
+/* ── Table card ── */
 .table-card {
-  background: #fff;
+  background: var(--pbl-surface);
+  border: 1px solid var(--pbl-border);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 6px 24px rgba(55,0,60,.10);
+  box-shadow: 0 0 32px rgba(87,255,20,.08);
 }
 .table-head, .row {
   display: grid;
@@ -269,32 +312,33 @@ main.wrap { padding-top: 24px; padding-bottom: 40px; }
   align-items: center;
 }
 .table-head {
-  background: var(--pl-purple);
-  color: #fff;
-  font-size: 12px;
+  background: #0d0d0d;
+  color: var(--pbl-muted);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .4px;
+  letter-spacing: .5px;
   font-weight: 700;
   padding: 12px 10px;
+  border-bottom: 1px solid var(--pbl-border);
 }
 .table-head .th-club { text-align: left; padding-left: 6px; }
 .table-head [class^="th-num"] { text-align: center; }
-.th-pts { color: var(--pl-green); }
+.th-pts { color: var(--pbl-green); }
 
 .rows .row {
   padding: 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--pbl-border);
   font-size: 15px;
   transition: background .15s ease;
 }
 .rows .row:last-child { border-bottom: none; }
-.rows .row:hover { background: #faf7ff; }
+.rows .row:hover { background: #1e1e1e; }
 
 .td-pos {
   position: relative;
   font-weight: 700;
   padding-left: 14px;
-  color: var(--ink);
+  color: var(--pbl-text);
 }
 .td-pos .zonebar {
   position: absolute;
@@ -304,9 +348,9 @@ main.wrap { padding-top: 24px; padding-bottom: 40px; }
   border-radius: 2px;
   background: transparent;
 }
-.row.champion .zonebar { background: var(--pl-green); }
-.row.ucl .zonebar { background: var(--pl-cyan); }
-.row.releg .zonebar { background: var(--pl-magenta); }
+.row.champion .zonebar { background: var(--pbl-champion); box-shadow: 0 0 6px var(--pbl-green); }
+.row.ucl      .zonebar { background: var(--pbl-top); }
+.row.releg    .zonebar { background: var(--pbl-releg); }
 
 .td-club {
   font-weight: 700;
@@ -315,30 +359,41 @@ main.wrap { padding-top: 24px; padding-bottom: 40px; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--pbl-text);
 }
-.td-num { text-align: center; color: #555; }
-.td-pts { font-weight: 800; color: var(--pl-purple); }
+.td-num { text-align: center; color: var(--pbl-muted); }
+.td-pts { font-weight: 900; color: var(--pbl-green); }
 
-.loading { padding: 24px; text-align: center; color: #999; }
-.updated { text-align: center; color: #999; font-size: 12px; margin-top: 12px; }
+.loading { padding: 24px; text-align: center; color: var(--pbl-muted); }
+.updated { text-align: center; color: var(--pbl-muted); font-size: 12px; margin-top: 12px; }
 
-/* Landing cards */
+/* ── Landing cards ── */
 .cards { display: grid; gap: 12px; }
 .card {
   display: flex; justify-content: space-between; align-items: center;
-  background: #fff; border-radius: 12px; padding: 18px 20px;
-  text-decoration: none; color: var(--pl-purple); font-weight: 700;
-  box-shadow: 0 4px 16px rgba(55,0,60,.08);
-  transition: transform .12s ease, box-shadow .12s ease;
+  background: var(--pbl-surface);
+  border: 1px solid var(--pbl-border);
+  border-radius: 12px; padding: 18px 20px;
+  text-decoration: none; color: var(--pbl-text); font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
-.card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(55,0,60,.16); }
-.card-go { color: var(--pl-magenta); font-size: 14px; }
-.empty { color: #777; text-align: center; padding: 40px 0; }
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(87,255,20,.18);
+  border-color: var(--pbl-green);
+}
+.card-go { color: var(--pbl-green); font-size: 14px; }
+.empty { color: var(--pbl-muted); text-align: center; padding: 40px 0; }
 
+/* ── Footer ── */
 .foot { padding: 20px 0 36px; }
-.foot .wrap { text-align: center; color: #aaa; font-size: 12px; }
+.foot .wrap { text-align: center; color: var(--pbl-muted); font-size: 12px; }
 
 @media (max-width: 520px) {
+  .topbar-inner { height: 56px; gap: 10px; }
+  .topbar-logo  { height: 42px; width: 42px; }
+  .topbar h1    { font-size: 18px; }
   .table-head, .row { grid-template-columns: 44px 1fr 28px 28px 28px 28px 38px 40px; }
   .rows .row { font-size: 13px; }
   .table-head { font-size: 10px; }
