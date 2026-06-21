@@ -75,6 +75,9 @@ async fn main() -> Result<()> {
                 commands::setadminrole::setadminrole(),
                 commands::setlogchannel::setlogchannel(),
                 commands::website::website(),
+                commands::generateschedule::generateschedule(),
+                commands::schedule::schedule(),
+                commands::predict::predict(),
             ],
             ..Default::default()
         })

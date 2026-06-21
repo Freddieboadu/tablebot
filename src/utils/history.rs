@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use crate::utils::table_utils::{recalculate_positions, sort_table, Fixture, Settings, Table};
+use crate::utils::table_utils::{recalculate_positions, sort_table, Fixture, NamedSchedule, Settings, Table};
 
 pub const HISTORY_LIMIT: usize = 20;
 pub const FIXTURES_LIMIT: usize = 50;
@@ -18,6 +18,7 @@ pub struct GuildData {
     pub history: Vec<Table>,
     pub fixtures: Vec<Fixture>,
     pub settings: Settings,
+    pub schedules: Vec<NamedSchedule>,
 }
 
 impl GuildData {
@@ -29,6 +30,7 @@ impl GuildData {
             history: load_history(guild_id)?,
             fixtures: load_fixtures(guild_id)?,
             settings: load_settings(guild_id)?,
+            schedules: load_schedules(guild_id)?,
         })
     }
 }
@@ -140,4 +142,23 @@ pub fn push_fixture(fixtures: &mut Vec<Fixture>, fixture: Fixture) {
     if fixtures.len() > FIXTURES_LIMIT {
         fixtures.remove(0);
     }
+}
+
+pub fn load_schedules(guild_id: u64) -> Result<Vec<NamedSchedule>> {
+    let dir = guild_dir(guild_id);
+    fs::create_dir_all(&dir)?;
+    let path = dir.join("schedules.json");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let raw = fs::read_to_string(&path)?;
+    Ok(serde_json::from_str(&raw)?)
+}
+
+pub fn save_schedules(guild_id: u64, schedules: &[NamedSchedule]) -> Result<()> {
+    let dir = guild_dir(guild_id);
+    fs::create_dir_all(&dir)?;
+    let json = serde_json::to_string_pretty(schedules)?;
+    fs::write(dir.join("schedules.json"), format!("{}\n", json))?;
+    Ok(())
 }

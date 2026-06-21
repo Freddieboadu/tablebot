@@ -1,7 +1,7 @@
 use anyhow::Context as AnyhowContext;
 use poise::serenity_prelude as serenity;
 
-use crate::utils::history::{push_fixture, push_snapshot, save_fixtures, save_history, save_table, HISTORY_LIMIT};
+use crate::utils::history::{push_fixture, push_snapshot, save_fixtures, save_history, save_schedules, save_table, HISTORY_LIMIT};
 use crate::utils::permissions::check_admin;
 use crate::utils::table_utils::{find_team_index, normalize_team_name, recalculate_positions, sort_table, Fixture};
 use crate::utils::validator::validate_match_input;
@@ -34,7 +34,7 @@ pub async fn update(
     let home_team_key = normalize_team_name(&home_team);
     let away_team_key = normalize_team_name(&away_team);
 
-    let (table_to_save, history_to_save, fixtures_to_save, home_pos, away_pos, log_channel) = {
+    let (table_to_save, history_to_save, fixtures_to_save, schedules_to_save, home_pos, away_pos, log_channel) = {
         let mut guild = guild_lock.lock().await;
 
         validate_match_input(&guild.table, &home_team_key, home_score, &away_team_key, away_score)?;
@@ -91,12 +91,33 @@ pub async fn update(
         });
 
         let log_channel = guild.settings.log_channel_id;
-        (guild.table.clone(), guild.history.clone(), guild.fixtures.clone(), home_pos, away_pos, log_channel)
+        (guild.table.clone(), guild.history.clone(), guild.fixtures.clone(), guild.schedules.clone(), home_pos, away_pos, log_channel)
     };
+
+    // Mark the first matching unplayed fixture in any schedule as played.
+    let updated_schedules = {
+        let mut scheds = schedules_to_save;
+        for sched in &mut scheds {
+            if let Some(m) = sched.matches.iter_mut().find(|m| {
+                !m.played
+                    && normalize_team_name(&m.home_team) == home_team_key
+                    && normalize_team_name(&m.away_team) == away_team_key
+            }) {
+                m.played = true;
+                break;
+            }
+        }
+        scheds
+    };
+    {
+        let mut guild = guild_lock.lock().await;
+        guild.schedules = updated_schedules.clone();
+    }
 
     save_table(guild_id, &table_to_save)?;
     save_history(guild_id, &history_to_save)?;
     save_fixtures(guild_id, &fixtures_to_save)?;
+    save_schedules(guild_id, &updated_schedules)?;
 
     let embed = serenity::CreateEmbed::new()
         .title("Match Result Applied")
