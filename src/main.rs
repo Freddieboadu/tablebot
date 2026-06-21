@@ -72,6 +72,7 @@ async fn main() -> Result<()> {
                 commands::fixtures::fixtures(),
                 commands::head2head::head2head(),
                 commands::help::help(),
+                commands::guide::guide(),
                 commands::setadminrole::setadminrole(),
                 commands::setlogchannel::setlogchannel(),
                 commands::website::website(),

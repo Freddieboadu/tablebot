@@ -4,6 +4,7 @@ pub mod deleteteam;
 pub mod fixtures;
 pub mod form;
 pub mod generateschedule;
+pub mod guide;
 pub mod head2head;
 pub mod help;
 pub mod predict;
