@@ -196,7 +196,149 @@ Follow these steps at the start of every new season:
 
 ## 🌍 Multi-Server Support
 
-Each Discord server has its own completely independent table, history, and settings. Data is never shared between servers.
+Each Discord server has its own completely independent table, history, settings and schedules. Data is never shared between servers. Any server that invites the bot gets all commands automatically — no configuration needed.
+
+---
+
+## 📅 Schedules
+
+The bot can generate a full season schedule from your teams and track which fixtures have been played. Three competition formats are supported.
+
+### Formats
+
+| Type | What it means | Slash command value |
+|------|--------------|---------------------|
+| Double round-robin | Every pair plays home **and** away (standard league) | `roundrobin` |
+| Single round-robin | Every pair plays once (group stage, preseason) | `single` |
+| Knockout | Single-elimination bracket, auto-advances each round | `knockout` |
+
+---
+
+### Step-by-step: setting up a season schedule
+
+**Step 1 — Add all teams and enter any results so far**
+```
+/addteam teams:CHELSEA, PSG, BARCELONA, CELTIC
+```
+
+**Step 2 — Generate the schedule**
+```
+/generateschedule name:Season 1
+```
+By default this creates a **double round-robin** with **3 games per club per gameweek**. You can override both:
+```
+/generateschedule name:Season 1 schedule_type:roundrobin games_per_week:2
+```
+
+**Step 3 — View the upcoming fixtures**
+```
+/schedule
+```
+No arguments = next gameweek with unplayed matches. Optional filters:
+```
+/schedule name:Season 1 gameweek:3
+/schedule name:Season 1 team:CHELSEA
+```
+
+**Step 4 — Enter results as normal — the schedule auto-updates**
+```
+/update home_team:CHELSEA home_score:2 away_team:PSG away_score:1
+```
+The bot automatically marks the matching scheduled fixture as played and shows W/L/D in `/schedule`.
+
+---
+
+### Running a preseason tournament with two groups then knockout
+
+**Create Group A** (only teams in that group):
+```
+/generateschedule name:Group A schedule_type:single teams:CHELSEA, PSG, BARCELONA, CELTIC
+```
+
+**Create Group B**:
+```
+/generateschedule name:Group B schedule_type:single teams:DORTMUND, MILAN, UNITED, MADRID
+```
+
+**List all schedules** at any time:
+```
+/schedule
+```
+
+**Create the knockout stage** (provide the 4–8 qualifiers in seeding order):
+```
+/generateschedule name:Knockout schedule_type:knockout teams:CHELSEA, DORTMUND, PSG, MILAN
+```
+
+**Advance to the next round** once all current-round matches are played:
+```
+/generateschedule name:Knockout schedule_type:knockout
+```
+The bot reads the winners from entered results and generates the next round automatically. It will tell you if the round isn't finished yet.
+
+---
+
+## 🔮 Predict & Scenario Calculator
+
+`/predict` works in two modes depending on whether you pass a `team` argument.
+
+### Full projection (no team argument)
+
+Simulates every remaining fixture using each team's current points-per-game (PPG) with a **+0.3 home advantage** and shows projected final standings:
+```
+/predict
+```
+With multiple schedules, specify which one:
+```
+/predict schedule_name:Season 1
+```
+
+### Scenario mode (with team argument)
+
+Finds the **minimum wins** a team needs from their remaining games to reach a target position, assuming every rival wins all their remaining games (worst case):
+```
+/predict team:CHELSEA target_position:1
+```
+Example output:
+> **CHELSEA** · currently **3rd** · **24 pts** · **6 games left** in _Season 1_
+>
+> To finish **1st or better:**
+> **4 wins**, **2 draws**, **0 losses** from 6 remaining games
+> *(worst-case: all rivals win theirs)*
+
+If the target is mathematically impossible, the bot tells you that too.
+
+---
+
+## 📖 Full Command Reference
+
+| Command | What it does | Admin only? |
+|---------|-------------|-------------|
+| `/table` | Show the league table | ❌ |
+| `/form team_name:X` | Show a team's last 5 results | ❌ |
+| `/fixtures` | Show last 10 results | ❌ |
+| `/head2head team1:X team2:Y` | Show H2H record between 2 teams | ❌ |
+| `/schedule` | List all schedules or view fixtures | ❌ |
+| `/predict` | Project final standings or run a scenario | ❌ |
+| `/help` | List all commands | ❌ |
+| `/website` | Get the link to the live league table website | ❌ |
+| `/update home_team:X home_score:N away_team:Y away_score:N` | Enter a result | ✅ |
+| `/revert` | Undo last change | ✅ |
+| `/addteam teams:X, Y, Z` | Add teams (comma separated) | ✅ |
+| `/deleteteam teams:X, Y` | Delete teams (comma separated) | ✅ |
+| `/cleartable` | Wipe the table | ✅ |
+| `/generateschedule name:X` | Generate or advance a schedule | ✅ |
+| `/setadminrole role:@Role` | Set who can edit the table | ✅ |
+| `/setlogchannel channel:#channel` | Set log channel | ✅ |
+
+---
+
+## ↩️ Revert System
+
+- Every change to the table is saved automatically before it happens
+- `/revert` undoes the most recent change
+- Up to **20 previous states** are stored per server
+- Works after `/update`, `/cleartable`, `/addteam`, `/deleteteam`
 
 ---
 
