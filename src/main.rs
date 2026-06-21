@@ -83,18 +83,14 @@ async fn main() -> Result<()> {
         })
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
-                // Register globally so any server that invites the bot gets
-                // commands automatically — no .env restart needed per new league.
-                // Also register in any explicitly-listed guilds for instant
-                // propagation during development.
+                // Global registration only — avoids duplicate commands that
+                // appear when both guild and global commands are registered.
+                // Commands propagate to all servers within ~1 hour of the bot joining.
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+
+                // Clear any leftover guild-specific commands that cause duplicates.
                 for id in guild_ids {
-                    poise::builtins::register_in_guild(
-                        ctx,
-                        &framework.options().commands,
-                        id,
-                    )
-                    .await?;
+                    poise::builtins::register_in_guild(ctx, &framework.options().commands[..0], id).await?;
                 }
 
                 Ok(Data {
